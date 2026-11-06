@@ -1,0 +1,173 @@
+---
+// A full-screen viewer for one photo at a time. Opened by any `.open` button on the page.
+interface Props { count: number }
+const { count } = Astro.props;
+---
+
+<dialog class="lightbox" aria-label="Photo viewer">
+  <figure class="stage">
+    <img alt="" />
+    <figcaption>
+      <span class="caption"></span>
+      <span class="date"></span>
+      <span class="count" aria-live="polite"></span>
+    </figcaption>
+  </figure>
+  <button type="button" class="nav prev" aria-label="Previous photo"><span aria-hidden="true">Previous</span></button>
+  <button type="button" class="nav next" aria-label="Next photo"><span aria-hidden="true">Next</span></button>
+  <button type="button" class="close" aria-label="Close" autofocus>Close</button>
+</dialog>
+
+<script define:vars={{ count }}>
+  const dialog = document.querySelector('.lightbox');
+  const img = dialog.querySelector('img');
+  const caption = dialog.querySelector('.caption');
+  const date = dialog.querySelector('.date');
+  const counter = dialog.querySelector('.count');
+  const buttons = [...document.querySelectorAll('.open')].sort(
+    (a, b) => Number(a.dataset.index) - Number(b.dataset.index),
+  );
+  let current = 0;
+  let opener = null;
+
+  function show(i) {
+    current = (i + buttons.length) % buttons.length;
+    const d = buttons[current].dataset;
+    img.removeAttribute('src');
+    img.srcset = d.srcset;
+    img.sizes = '100vw';
+    img.src = d.src;
+    img.alt = d.alt;
+    caption.textContent = d.caption;
+    date.textContent = d.date;
+    counter.textContent = `${current + 1} of ${count}`;
+    // Warm the next photo so arrowing through feels instant.
+    const next = buttons[(current + 1) % buttons.length].dataset;
+    const pre = new Image();
+    pre.sizes = '100vw';
+    pre.srcset = next.srcset;
+  }
+
+  buttons.forEach((b, i) =>
+    b.addEventListener('click', () => {
+      opener = b;
+      show(i);
+      dialog.showModal();
+    }),
+  );
+
+  dialog.querySelector('.prev').addEventListener('click', () => show(current - 1));
+  dialog.querySelector('.next').addEventListener('click', () => show(current + 1));
+  dialog.querySelector('.close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => opener?.focus());
+
+  // Click on the dark area around the photo to close.
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog || e.target.classList.contains('stage')) dialog.close();
+  });
+
+  dialog.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); show(current + 1); }
+  });
+
+  // Swipe left or right on phones.
+  let startX = null;
+  dialog.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+  dialog.addEventListener('touchend', (e) => {
+    if (startX === null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
+    startX = null;
+  });
+</script>
+
+<style>
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--night);
+    color: #e9e9e6;
+    overscroll-behavior: contain;
+  }
+  .lightbox[open] {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    animation: fade 180ms ease-out;
+  }
+  .lightbox::backdrop { background: var(--night); }
+
+  @keyframes fade { from { opacity: 0; } }
+
+  .stage {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 3.5rem clamp(1rem, 7vw, 6rem) 1.25rem;
+    min-height: 0;
+  }
+
+  .stage img {
+    max-width: 100%;
+    max-height: calc(100dvh - 8.5rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .stage figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.25rem;
+    font-size: var(--step--1);
+    text-align: center;
+  }
+  .stage .date, .stage .count { color: #9a9b98; font-variant-numeric: oldstyle-nums; }
+
+  .nav, .close {
+    position: absolute;
+    border: 0;
+    background: none;
+    color: #e9e9e6;
+    cursor: pointer;
+    font-size: var(--step--1);
+    padding: 0.75rem 1rem;
+  }
+  .nav:hover, .close:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+  .lightbox :focus-visible { outline-color: #e9e9e6; }
+
+  /* Previous and next fill each side of the screen, so the whole edge is a target. */
+  .nav {
+    top: 3.5rem;
+    bottom: 3.5rem;
+    width: clamp(3rem, 12vw, 9rem);
+    display: flex;
+    align-items: center;
+  }
+  .prev { left: 0; justify-content: flex-start; }
+  .next { right: 0; justify-content: flex-end; }
+  .nav span { opacity: 0; transition: opacity 150ms; }
+  .nav:hover span, .nav:focus-visible span { opacity: 1; }
+  .nav:focus-visible { outline: none; }
+  .nav:focus-visible span { outline: 2px solid #e9e9e6; outline-offset: 4px; }
+
+  .close { top: 0.5rem; right: 0.5rem; }
+
+  @media (max-width: 720px), (hover: none) {
+    .stage { padding: 3.25rem 0.75rem 3.75rem; }
+    .stage img { max-height: calc(100dvh - 10.5rem); }
+    .nav { top: auto; bottom: 0.25rem; height: 3rem; width: auto; }
+    .nav span { opacity: 1; }
+  }
+</style>

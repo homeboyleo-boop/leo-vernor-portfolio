@@ -1,0 +1,22 @@
+# Only the website itself goes to GitHub. Everything else in this folder
+# (original photos, scans, the "My work" folder, headshots, loose images)
+# stays on this computer. To share something new, add it to the list below.
+
+/*
+!/.gitignore
+!/.github/
+!/README.md
+!/astro.config.mjs
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/public/
+!/scripts/
+!/src/
+
+# Never upload these, even inside the folders above
+node_modules/
+dist/
+.astro/
+.DS_Store
+.env*

@@ -1,0 +1,272 @@
+---
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Base from '../layouts/Base.astro';
+import Lightbox from '../components/Lightbox.astro';
+import list from '../photos.json';
+
+// Every web-sized photo in src/assets/photos (made by `npm run photos`).
+const files = import.meta.glob<{ default: ImageMetadata }>('../assets/photos/*.jpg', { eager: true });
+const fileFor = (name: string) => files[`../assets/photos/${name}`]?.default;
+
+const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function formatDate(date: string) {
+  const [y, m] = date.split('-');
+  return m ? `${months[Number(m) - 1]} ${y}` : y ?? '';
+}
+
+type Shape = 'wide' | 'tall' | 'square';
+const shapeOf = (w: number, h: number): Shape => (w / h > 1.12 ? 'wide' : w / h < 0.88 ? 'tall' : 'square');
+
+// Column widths (out of 12) for a photo alone on its row, or sharing it.
+const SOLO: Record<Shape, number[]> = { wide: [8, 7, 9], tall: [5, 4], square: [6, 5] };
+const PAIR: Record<Shape, number> = { wide: 6, tall: 4, square: 5 };
+// Where lone photos start, cycled so the page wanders left and right.
+const STARTS = [1, 5, 3, 7, 2, 6, 4];
+
+const photos = (
+  await Promise.all(
+    list.map(async (p, index) => {
+      const src = fileFor(p.image);
+      if (!src) return null;
+      const full = await getImage({ src, widths: [640, 960, 1400, 2000].filter((w) => w <= src.width).concat(src.width < 640 ? [src.width] : []) });
+      return {
+        ...p,
+        src,
+        index,
+        shape: shapeOf(src.width, src.height),
+        label: formatDate(p.date),
+        year: p.date.slice(0, 4) || 'Undated',
+        full: { src: full.src, srcset: full.srcSet.attribute },
+      };
+    }),
+  )
+).filter((p) => p !== null);
+
+type Photo = (typeof photos)[number];
+type Placed = { photo: Photo; column: string; drop: number };
+
+// Group into rows: photos from the same month share a row when they fit side by side.
+const rows: { year: string; items: Placed[] }[] = [];
+let solo = 0;
+for (let i = 0; i < photos.length; i++) {
+  const a = photos[i];
+  const b = photos[i + 1];
+  if (b && b.date === a.date && a.date && PAIR[a.shape] + PAIR[b.shape] <= 11) {
+    const gap = 12 - PAIR[a.shape] - PAIR[b.shape];
+    const lead = rows.length % 2 === 0 ? 1 : Math.max(1, gap); // alternate which side has the slack
+    rows.push({
+      year: a.year,
+      items: [
+        { photo: a, column: `${lead} / span ${PAIR[a.shape]}`, drop: 0 },
+        { photo: b, column: `${lead + PAIR[a.shape] + (gap > 1 ? 1 : 0)} / span ${PAIR[b.shape]}`, drop: b.shape === 'tall' ? 4 : 7 },
+      ],
+    });
+    i++;
+  } else {
+    const spans = SOLO[a.shape];
+    const span = spans[solo % spans.length];
+    const start = Math.min(STARTS[solo % STARTS.length], 13 - span);
+    rows.push({ year: a.year, items: [{ photo: a, column: `${start} / span ${span}`, drop: 0 }] });
+    solo++;
+  }
+}
+
+const years = [...new Set(rows.map((r) => r.year))];
+const range = years.length ? `${years.at(-1)} to ${years[0]}` : '';
+---
+
+<Base
+  title="Leo Vernor, photographs"
+  description={`Photographs by Leo Vernor, ${range}.`}
+>
+  <header class="masthead">
+    <h1 class="name">Leo Vernor</h1>
+  </header>
+
+  <main class="archive">
+    {years.map((year) => (
+      <section class="year" aria-labelledby={`y-${year}`}>
+        <h2 class="year-label" id={`y-${year}`}>{year}</h2>
+        <div class="rows">
+          {rows.filter((r) => r.year === year).map((row) => (
+            <div class:list={['row', { pair: row.items.length > 1 }]}>
+              {row.items.map(({ photo, column, drop }) => (
+                <figure
+                  class:list={['photo', photo.shape]}
+                  style={`--column: ${column}; --drop: ${drop}rem`}
+                >
+                  <button
+                    type="button"
+                    class="open"
+                    data-index={photo.index}
+                    data-src={photo.full.src}
+                    data-srcset={photo.full.srcset}
+                    data-alt={photo.alt}
+                    data-caption={photo.caption}
+                    data-date={photo.label}
+                    aria-label={`Open ${photo.caption}, ${photo.label}`}
+                  >
+                    <img
+                      src={photo.full.src}
+                      srcset={photo.full.srcset}
+                      sizes="(max-width: 720px) 92vw, 60vw"
+                      width={photo.src.width}
+                      height={photo.src.height}
+                      alt={photo.alt}
+                      loading={photo.index < 2 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  </button>
+                  <figcaption>
+                    <span class="caption">{photo.caption}</span>
+                    <span class="date">{photo.label}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </main>
+
+  <footer class="colophon">
+    <p>&copy; {new Date().getFullYear()} Leo Vernor</p>
+  </footer>
+
+  <Lightbox count={photos.length} />
+</Base>
+
+<style>
+  .masthead {
+    padding: var(--gutter) var(--gutter) 0;
+  }
+
+  /* The one loud thing on the page: the name, set to fill the width. */
+  .name {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: calc((100vw - 2 * var(--gutter)) * 0.236);
+    font-variation-settings: 'opsz' 72;
+    line-height: 0.78;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-inline: -0.035em;
+  }
+
+  .masthead::after {
+    content: '';
+    display: block;
+    margin-top: 1.5rem;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .archive {
+    padding: 0 var(--gutter);
+  }
+
+  .year {
+    display: grid;
+    grid-template-columns: minmax(4.5rem, 10%) 1fr;
+    column-gap: var(--gutter);
+    border-bottom: 1px solid var(--rule);
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+  .year:last-child { border-bottom: 0; }
+
+  /* Stays in the margin while you scroll through that year. */
+  .year-label {
+    position: sticky;
+    top: var(--gutter);
+    align-self: start;
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.2vw, 3.75rem);
+    font-variation-settings: 'opsz' 72;
+    line-height: 0.9;
+    font-variant-numeric: lining-nums;
+  }
+
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4rem, 10vw, 9rem);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: clamp(0.75rem, 2vw, 1.75rem);
+    align-items: start;
+  }
+
+  .photo {
+    grid-column: var(--column);
+    margin: 0;
+    padding-top: var(--drop);
+  }
+
+  .open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+  }
+
+  .open img { width: 100%; }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.1rem 1rem;
+    margin-top: 0.6rem;
+    font-size: var(--step--1);
+    line-height: 1.35;
+  }
+  .date {
+    color: var(--ink-soft);
+    font-variant-numeric: oldstyle-nums;
+    white-space: nowrap;
+  }
+
+  .colophon {
+    padding: 2rem var(--gutter) 3rem;
+    border-top: 1px solid var(--ink);
+    margin-inline: var(--gutter);
+    padding-inline: 0;
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+  }
+  .colophon p { margin: 0; }
+
+  /* Phones: one photo per line, still drifting left and right. */
+  @media (max-width: 720px) {
+    .year {
+      grid-template-columns: 1fr;
+      padding-block: 2.5rem 3.5rem;
+    }
+    .year-label {
+      top: 0;
+      z-index: 1;
+      margin: 0 calc(-1 * var(--gutter)) 1.5rem;
+      padding: 0.6rem var(--gutter) 0.4rem;
+      background: var(--paper);
+      font-size: 2.25rem;
+    }
+    .rows { gap: 3.5rem; }
+    .row { display: flex; flex-direction: column; gap: 3.5rem; }
+    .photo { padding-top: 0; width: 100%; }
+    .photo.tall { width: 78%; }
+    .photo.square { width: 88%; }
+    .row:nth-child(even) .photo.tall,
+    .row:nth-child(even) .photo.square,
+    .row.pair .photo + .photo { align-self: flex-end; }
+  }
+</style>
