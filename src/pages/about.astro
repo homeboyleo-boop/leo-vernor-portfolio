@@ -1,0 +1,55 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import headshot from '../assets/about/headshot.jpg';
+
+const photo = await getImage({ src: headshot, widths: [480, 800, 1200] });
+---
+
+<Base title="About, Leo Vernor" description="Leo Vernor is a photographer and storyteller based in Chicago, Illinois.">
+  <SiteHeader current="about" />
+
+  <main class="about">
+    <h1 class="visually-hidden">About</h1>
+    <img
+      class="headshot"
+      src={photo.src}
+      srcset={photo.srcSet.attribute}
+      sizes="(max-width: 720px) 70vw, 22rem"
+      width={headshot.width}
+      height={headshot.height}
+      alt="Leo Vernor smiling outdoors under green leaves, wearing a white shirt and a maroon University of Chicago graduation stole"
+    />
+    <p class="bio">
+      My name is Leo Vernor. Currently, I am based in Chicago, Illinois, but I am willing to go
+      wherever my work takes me. I have a passion for storytelling and photography, with
+      experience in both digital and film photography, as well as printmaking. I recently
+      graduated from the University of Chicago with degrees in Middle Eastern Studies and
+      Anthropology, and I am conversationally fluent in both Modern Standard and Egyptian
+      Colloquial Arabic.
+    </p>
+  </main>
+</Base>
+
+<style>
+  .about {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+  }
+
+  .headshot {
+    width: min(22rem, 70vw);
+  }
+
+  .bio {
+    max-width: 36rem;
+    margin: clamp(2rem, 4vw, 3rem) 0 0;
+    font-size: var(--step-1);
+    line-height: 1.55;
+    text-align: center;
+    text-wrap: pretty;
+  }
+</style>

@@ -81,9 +81,7 @@ const range = years.length ? `${years.at(-1)} to ${years[0]}` : '';
   title="Photos, Leo Vernor"
   description={`Photographs by Leo Vernor, ${range}.`}
 >
-  <div class="masthead">
-    <SiteHeader current="photography" />
-  </div>
+  <SiteHeader current="photography" />
 
   <main class="archive">
     <h1 class="visually-hidden">Photos</h1>
@@ -141,13 +139,6 @@ const range = years.length ? `${years.at(-1)} to ${years[0]}` : '';
 </Base>
 
 <style>
-  .masthead::after {
-    content: '';
-    display: block;
-    margin: 1.25rem var(--gutter) 0;
-    border-bottom: 1px solid var(--ink);
-  }
-
   .archive {
     padding: 0 var(--gutter);
   }

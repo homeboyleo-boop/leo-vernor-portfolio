@@ -1,0 +1,153 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+
+// Messages sent through the form are forwarded to your inbox by Formspree (formspree.io).
+// Paste your form's address here, e.g. 'https://formspree.io/f/abcdwxyz'.
+const formEndpoint = 'https://formspree.io/f/mqppoaov';
+const linkedin = 'https://www.linkedin.com/in/leo-vernor-110267332';
+
+const connected = formEndpoint.startsWith('https://');
+// In the local preview the form always shows, so you can see it before it's connected.
+const showForm = connected || import.meta.env.DEV;
+---
+
+<Base title="Contact, Leo Vernor" description="Send Leo Vernor a message.">
+  <SiteHeader current="contact" />
+
+  <main class="contact">
+    <h1 class="visually-hidden">Contact</h1>
+
+    {showForm ? (
+      <form class="form" action={formEndpoint} data-connected={connected ? 'yes' : 'no'} method="POST">
+        <label>
+          <span>Name</span>
+          <input name="name" type="text" autocomplete="name" required />
+        </label>
+        <label>
+          <span>Email</span>
+          <input name="email" type="email" autocomplete="email" required />
+        </label>
+        <label>
+          <span>Message</span>
+          <textarea name="message" rows="7" required></textarea>
+        </label>
+        {/* Hidden from people; bots that fill it in are discarded as spam. */}
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" class="trap" aria-hidden="true" />
+        <button type="submit">Send message</button>
+        <p class="status" role="status" aria-live="polite"></p>
+      </form>
+    ) : (
+      <p class="form not-connected">
+        The contact form isn’t connected yet. Add your Formspree address to
+        <code>src/pages/contact.astro</code> to turn it on.
+      </p>
+    )}
+
+    <p class="elsewhere">
+      Or find me on <a href={linkedin} rel="me noopener" target="_blank">LinkedIn</a>.
+    </p>
+  </main>
+</Base>
+
+{showForm && (
+  <script>
+    // Send without leaving the page, and say plainly what happened.
+    const form = document.querySelector<HTMLFormElement>('.form')!;
+    const status = form.querySelector<HTMLElement>('.status')!;
+    const button = form.querySelector<HTMLButtonElement>('button')!;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (form.dataset.connected !== 'yes') {
+        status.textContent = 'Preview only: add your Formspree address to send real messages.';
+        status.dataset.state = 'error';
+        return;
+      }
+      button.disabled = true;
+      button.textContent = 'Sending…';
+      status.textContent = '';
+      status.dataset.state = '';
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        form.reset();
+        status.textContent = 'Message sent. I’ll get back to you soon.';
+        status.dataset.state = 'sent';
+      } catch {
+        status.textContent = 'Your message didn’t send. Check your connection and try again.';
+        status.dataset.state = 'error';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Send message';
+      }
+    });
+  </script>
+)}
+
+<style>
+  .contact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+  }
+
+  .form {
+    display: grid;
+    gap: 1.5rem;
+    width: min(34rem, 100%);
+    margin: 0;
+  }
+
+  label { display: grid; gap: 0.4rem; }
+  label span { font-size: var(--step--1); color: var(--ink-soft); }
+
+  input, textarea {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--ink-soft);
+    border-radius: 0;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--step-0);
+  }
+  textarea { resize: vertical; min-height: 9rem; }
+  input:focus-visible, textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; border-color: var(--ink); }
+
+  .trap { position: absolute; left: -9999px; width: 1px; height: 1px; }
+
+  button {
+    justify-self: start;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--step-0);
+    cursor: pointer;
+  }
+  button:hover { background: var(--paper); color: var(--ink); }
+  button:disabled { opacity: 0.6; cursor: progress; }
+
+  .status { margin: 0; min-height: 1.5em; }
+  .status[data-state='error'] { color: #9b1c1c; }
+
+  .not-connected {
+    padding: 1rem 1.25rem;
+    border: 1px dashed var(--ink-soft);
+    color: var(--ink-soft);
+  }
+
+  .elsewhere {
+    width: min(34rem, 100%);
+    margin: 2.5rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    font-size: var(--step-1);
+  }
+</style>

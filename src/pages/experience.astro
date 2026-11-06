@@ -1,0 +1,211 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+
+// Everything on this page comes from this list. To add a job, copy an entry and edit it.
+// `points` are the bullet points; leave it empty ([]) for none.
+type Entry = {
+  org: string;
+  role: string;
+  place: string;
+  dates: string;
+  points: string[];
+};
+
+const sections: { title: string; entries: Entry[] }[] = [
+  {
+    title: 'Education',
+    entries: [
+      {
+        org: 'The University of Chicago',
+        role: 'B.A. in Middle Eastern Studies with Honors, B.A. in Anthropology with Honors',
+        place: 'Chicago, Illinois',
+        dates: 'June 2026',
+        points: [
+          'Thesis: Bodies Unburied, Memories Erased: Heritage, State Violence, and Digital Counter-Remembrance in Cairo’s City of the Dead',
+          'Awards: President’s Scholar, Foreign Language Acquisition Grant Recipient (2024), Jeff Metcalf Internship Grant (2023, 2025, 2026), Dean’s List (2026)',
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Experience',
+    entries: [
+      {
+        org: 'Palestinian Institute for International Humanitarian Law and Human Rights (PIIHL/HR)',
+        role: 'Metcalf Fellow / Pozen Center for Human Rights Intern',
+        place: 'Remote',
+        dates: 'June 2026 – September 2026',
+        points: [
+          'Facilitated workshops and seminars on International Cultural Heritage Law and burial rights for the Palestinian Institute for IHL&HR’s summer school program, drawing on original case study research',
+          'Collaborated with institute staff on research projects examining health policy, cost analysis, and access to healthcare through a human rights lens',
+          'Taught basic and intermediate level English classes to university students',
+        ],
+      },
+      {
+        org: 'Hyde Park Herald',
+        role: 'Freelance Journalist',
+        place: 'Chicago, Illinois',
+        dates: 'March 2026 – June 2026',
+        points: [
+          'Reported on local businesses for the weekly Hyde Park Herald, highlighting neighborhood economic activity, community history, and the people behind neighborhood institutions',
+          'Conducted interviews with local artists and business owners, synthesizing my reporting into clear and concise articles for local readership',
+          'Researched background context, verified details, and met editorial deadlines while adapting drafts based on editor feedback',
+        ],
+      },
+      {
+        org: 'Austin Chronicle',
+        role: 'Editorial Intern',
+        place: 'Austin, Texas',
+        dates: 'June 2023 – September 2023',
+        points: [
+          'Developed basic copywriting, editing, and proofreading skills working alongside editors and staff writers in the News and Music departments, writing subheads as well as Twitter and Instagram captions',
+          'Pitched my own stories for multiple sections, learned interviewing skills and ethics, and assisted editors with numerous tasks including social media managing, issue-proofing, and web-uploading with HTML',
+        ],
+      },
+      {
+        org: 'Allday Pizza',
+        role: 'Front of House, Food-runner',
+        place: 'Austin, Texas',
+        dates: 'June 2023 – September 2023',
+        points: [
+          'Switched between POS, food-running, and expo positions during high-volume shifts at a young and popular upscale pizzeria and wine bar',
+          'Provided customer service to 400–600+ customers per night, and memorized a frequently changing menu',
+        ],
+      },
+      {
+        org: 'Amy’s Ice Cream',
+        role: 'Scoop',
+        place: 'Austin, Texas',
+        dates: 'October 2021 – June 2022',
+        points: [
+          'During warm days and weekends, served a consistent stream of customers for 3–5 hours at a time',
+          'Simultaneously ran POS and prepared orders for customers',
+          'Maintained stock including ice cream, toppings, and merchandise',
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Leadership and activities',
+    entries: [
+      {
+        org: 'WHPK Radio',
+        role: 'Booking Director',
+        place: 'Chicago, Illinois',
+        dates: 'September 2022 – June 2026',
+        points: [
+          'Coordinated and promoted events in person and on social media, including concerts and collaborations with other student organizations such as the Major Activities Board, as well as venues around Chicago',
+          'Hosted the weekly “Pure Hype” in-studio concert series, booking musicians from around Chicago to play live on-air, hosting a post-show interview, and managing sound and audio equipment',
+        ],
+      },
+    ],
+  },
+];
+---
+
+<Base title="Experience, Leo Vernor" description="Education, work experience and activities of Leo Vernor.">
+  <SiteHeader current="experience" />
+
+  <main class="experience">
+    <h1 class="visually-hidden">Experience</h1>
+    {sections.map((section) => (
+      <section class="section">
+        <h2 class="section-title">{section.title}</h2>
+        <div class="entries">
+          {section.entries.map((e) => (
+            <article class="entry">
+              <p class="when">
+                <span>{e.dates}</span>
+                <span>{e.place}</span>
+              </p>
+              <div class="what">
+                <h3 class="org">{e.org}</h3>
+                <p class="role">{e.role}</p>
+                {e.points.length > 0 && (
+                  <ul class="points">
+                    {e.points.map((p) => <li>{p}</li>)}
+                  </ul>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    ))}
+  </main>
+</Base>
+
+<style>
+  .experience {
+    padding: 0 var(--gutter) clamp(4rem, 8vw, 7rem);
+  }
+
+  /* Same rhythm as the Photos page: a heading in the margin, content beside it. */
+  .section {
+    display: grid;
+    grid-template-columns: minmax(10rem, 22%) minmax(0, 46rem);
+    column-gap: var(--gutter);
+    padding-block: clamp(2.5rem, 5vw, 4rem);
+    border-bottom: 1px solid var(--rule);
+  }
+  .section:last-child { border-bottom: 0; }
+
+  .section-title {
+    grid-column: 1 / -1;
+    margin: 0 0 1.75rem;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.2vw, 3.75rem);
+    font-variation-settings: 'opsz' 72;
+    line-height: 0.95;
+  }
+
+  .entries {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    row-gap: 2.5rem;
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+  }
+
+  .when {
+    display: flex;
+    flex-direction: column;
+    margin: 0.2rem 0 0;
+    font-size: var(--step--1);
+    line-height: 1.45;
+    color: var(--ink-soft);
+    font-variant-numeric: oldstyle-nums;
+  }
+
+  .org {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .role {
+    margin: 0.2rem 0 0;
+    font-style: italic;
+  }
+
+  .points {
+    margin: 0.75rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .points li { margin-top: 0.4rem; }
+  .points li::marker { color: var(--ink-soft); }
+
+  @media (max-width: 720px) {
+    .section { grid-template-columns: 1fr; }
+    .entry { grid-template-columns: 1fr; }
+    .when { flex-direction: row; flex-wrap: wrap; gap: 0 1rem; margin: 0 0 0.35rem; }
+  }
+</style>

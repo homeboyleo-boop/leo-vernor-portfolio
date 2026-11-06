@@ -1,18 +1,21 @@
 ---
-// The big name and the menu, shared by every page.
+// The name and the menu, shared by every page.
 // To add a page to the menu, add it to `links` below.
 interface Props {
-  current?: 'home' | 'photography';
+  current?: 'home' | 'photography' | 'experience' | 'about' | 'contact';
 }
 const { current } = Astro.props;
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const links = [
   { id: 'photography', label: 'Photos', href: `${base}photography/` },
+  { id: 'experience', label: 'Experience', href: `${base}experience/` },
+  { id: 'about', label: 'About', href: `${base}about/` },
+  { id: 'contact', label: 'Contact', href: `${base}contact/` },
 ];
 ---
 
-<header class="site-header">
+<header class:list={['site-header', { ruled: current !== 'home' }]}>
   {current === 'home'
     ? <h1 class="name">Leo Vernor</h1>
     : <p class="name"><a href={base} aria-label="Leo Vernor, home">Leo Vernor</a></p>}
@@ -30,6 +33,14 @@ const links = [
 <style>
   .site-header {
     padding: var(--gutter) var(--gutter) 0;
+  }
+
+  /* Inner pages get a rule under the header; the home page sits on its photo. */
+  .site-header.ruled::after {
+    content: '';
+    display: block;
+    margin-top: 1.25rem;
+    border-bottom: 1px solid var(--ink);
   }
 
   /* The name, set across about half the width. */
