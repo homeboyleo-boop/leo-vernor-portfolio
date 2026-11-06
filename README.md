@@ -11,6 +11,14 @@ npm run dev      # then open http://localhost:4321
 
 Press Ctrl+C in the terminal to stop the preview.
 
+## Pages
+
+- `/` — home: the photo in `src/assets/home/websitebackground.jpg` fills the screen.
+  To change it, replace that file with another photo of the same name.
+- `/photography/` — every photo in `src/photos.json`.
+
+The menu is in `src/components/SiteHeader.astro`.
+
 ## Add or change photos
 
 1. Put the photo in `Photos/`, named with its date and caption:
